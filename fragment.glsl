@@ -28,47 +28,49 @@ void main(void) {
     // Get mouse coordinates
     vec2 mouseCoord = uMouse * uResolution;
 
-    // Calculate absolute distance on each axis separately
-    vec2 distVec = pixelCoord - mouseCoord;
+    // Calculate distance to mouse
+    float dist = distance(pixelCoord, mouseCoord);
 
-    // Use Euclidean distance for a circular radius instead of square
-    float dist = length(distVec);
+    // Use the uPixelationRadius uniform to control the area of effect
+    // If uPixelationRadius is 0, use default values
+    float innerRadius = uPixelationRadius > 0.0 ? uPixelationRadius * 0.9 : 1150.0;
+    float outerRadius = uPixelationRadius > 0.0 ? uPixelationRadius : 600.0;
 
-    // Normalize the distance with a fixed value for predictable scaling
-    float distanceNormalized = min(1.0, dist / 1300.0);
+    // Use smoothstep for a nicer transition
+    // We want smaller pixels (more pixelation) closer to the mouse
+    // Increasing the range (50->innerRadius, 300->outerRadius) makes the effect area larger
+    float pixelSizeFactor = 1.0 - smoothstep(innerRadius, outerRadius, dist);
 
-    // Create pixelation factor that's strongest near the mouse
-    // Use a much higher power value to create a more dramatic falloff from mouse position
-    float pixelSizeFactor = max(0.0, pow(1.0 - (distanceNormalized / 1.1), 2.0));
+    // Start with a small pixelation and increase it based on mouse proximity
+    // Using a more conservative range to avoid extreme pixelation
+    float pixelSize = mix(1.0, max(15.0, uPixelSize), pixelSizeFactor) / uDevicePixelRatio;
 
-    // Apply a minimum pixelation everywhere
-    float basePixelSize = 0.01 + distanceNormalized / uDevicePixelRatio;
-    float prx = 0.01 - distanceNormalized / uDevicePixelRatio;
-    float pry = 1.0 - distanceNormalized / uDevicePixelRatio;
+    // Simple, robust pixelation approach
+    vec2 pixelCoords = uv;
 
-    // Calculate final pixel size
-    float finalPixelSize = mix(basePixelSize, uPixelSize / uDevicePixelRatio, pixelSizeFactor);
+    if (pixelSize > 1.0) {
+        // Pixelate by using a lower resolution sampling
+        pixelCoords = floor(uv * uResolution / pixelSize) * pixelSize / uResolution;
+    }
 
-    // Create rectangular pixels
-    //!this pixellise check it out
-    vec2 pixelRatio = vec2(prx, pry); // Make pixels taller than wide
-    vec2 scaledResolution = uResolution * pixelRatio;
+    // Ensure texture coordinates stay within valid range
+    pixelCoords = clamp(pixelCoords, 0.0, 1.0);
 
-    // Apply pixelation by snapping to grid
-    vec2 pixelCoords = floor(uv * scaledResolution / finalPixelSize) * finalPixelSize / scaledResolution;
+    // Optional: Add a subtle animation
+    if (pixelSizeFactor > 0.1) {
+        float animOffset = sin(uTime * 0.5) * 0.002 * pixelSizeFactor;
+        pixelCoords += vec2(animOffset);
+        // Clamp again after animation
+        pixelCoords = clamp(pixelCoords, 0.0, 1.0);
+    }
 
-    // Add subtle animation
-    float animationStrength = 0.007 * pixelSizeFactor;
-    pixelCoords.x += sin(pixelCoords.y * 50.0 + uTime * 0.25) * tan(animationStrength);
-    pixelCoords.y += cos(pixelCoords.x * 58.0 + uTime * 0.23) * tan(animationStrength);
-
-    // Sample the texture with pixelated coordinates
+    // Sample the texture
     vec4 texColor = texture2D(uSampler, pixelCoords);
 
     // Add subtle color shifting based on proximity to mouse
     if (pixelSizeFactor > 0.1) {
         vec3 shiftedColor = colorShift(texColor.rgb, uTime);
-        texColor.rgb = mix(texColor.rgb, shiftedColor, pixelSizeFactor * 0.5);
+        texColor.rgb = mix(texColor.rgb, shiftedColor, pixelSizeFactor * 0.3);
     }
 
     gl_FragColor = texColor;
