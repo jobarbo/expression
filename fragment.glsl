@@ -52,12 +52,12 @@ void main(void) {
 
     // Start with a small pixelation and increase it based on mouse proximity
     // Using a more conservative range to avoid extreme pixelation
-    float pixelSize = mix(1.0, max(15.0, uPixelSize), pixelSizeFactor) / uDevicePixelRatio;
+    float pixelSize = mix(10.1, max(0.1, uPixelSize), pixelSizeFactor *2.0) / uDevicePixelRatio;
 
     // Simple, robust pixelation approach
     vec2 pixelCoords = uv;
 
-    if (pixelSize > 1.0) {
+    if (pixelSize > 0.02) {
         // Pixelate by using a lower resolution sampling
         pixelCoords = floor(uv * uResolution / pixelSize) * pixelSize / uResolution;
     }
