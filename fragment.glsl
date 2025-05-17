@@ -71,7 +71,7 @@ void main(void) {
 
     // Optional: Add a subtle animation
     if (pixelSizeFactor > 0.1) {
-        float animOffset = sin(uTime * 0.5) * 0.002 * pixelSizeFactor;
+        float animOffset = sin(uTime * 0.0005) * 0.002 * pixelSizeFactor;
         pixelCoords += vec2(animOffset);
         // Clamp again after animation
         pixelCoords = clamp(pixelCoords, 0.0, 1.0);
