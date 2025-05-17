@@ -89,9 +89,13 @@ void main(void) {
         texColor.rgb = mix(texColor.rgb, shiftedColor, pixelSizeFactor * 0.3);
     }
 
-    // Remove the horizontal compression effect
-    // Blend between pixelated and original texture based on distance for smoother transition
-    // Use a different falloff curve specifically for the blend
-    float blendFactor = smoothstep(innerRadius * 0.9, outerRadius * 1.1, dist);
-    gl_FragColor = mix(texColor, originalColor, blendFactor);
+    // Create a hard edge instead of a smooth transition
+    // Use a sharp cutoff at the boundary
+    if (dist < outerRadius) {
+        // Inside the effect radius - use the pixelated texture
+        gl_FragColor = texColor;
+    } else {
+        // Outside the effect radius - use the original texture
+        gl_FragColor = originalColor;
+    }
 }
