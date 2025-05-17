@@ -58,8 +58,12 @@ void main(void) {
     vec2 pixelCoords = uv;
 
     if (pixelSize > 0.02) {
-        // Pixelate by using a lower resolution sampling
-        pixelCoords = floor(uv * uResolution / pixelSize) * pixelSize / uResolution;
+        // Apply asymmetric pixelation to stretch pixels vertically
+        float verticalStretch = mix(12.0, 12.0, pixelSizeFactor);
+
+        // Pixelate by using a lower resolution sampling with vertical stretching
+        pixelCoords.x = floor(uv.x * uResolution.x / pixelSize) * pixelSize / uResolution.x;
+        pixelCoords.y = floor(uv.y * uResolution.y / (pixelSize / verticalStretch)) * (pixelSize / verticalStretch) / uResolution.y;
     }
 
     // Ensure texture coordinates stay within valid range
@@ -85,6 +89,7 @@ void main(void) {
         texColor.rgb = mix(texColor.rgb, shiftedColor, pixelSizeFactor * 0.3);
     }
 
+    // Remove the horizontal compression effect
     // Blend between pixelated and original texture based on distance for smoother transition
     // Use a different falloff curve specifically for the blend
     float blendFactor = smoothstep(innerRadius * 0.9, outerRadius * 1.1, dist);
