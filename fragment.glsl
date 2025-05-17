@@ -29,17 +29,26 @@ void main(void) {
     vec2 mouseCoord = uMouse * uResolution;
 
     // Calculate distance to mouse
-    float dist = distance(pixelCoord, mouseCoord);
+    // Create an elliptical distance by scaling the X and Y components differently
+    vec2 distVec = pixelCoord - mouseCoord;
+    float xScale = 1.5; // Make X distance appear larger (narrower effect)
+    float yScale = 0.7; // Make Y distance appear smaller (taller effect)
+    float dist = length(vec2(distVec.x * xScale, distVec.y * yScale));
 
     // Use the uPixelationRadius uniform to control the area of effect
     // If uPixelationRadius is 0, use default values
     float innerRadius = uPixelationRadius > 0.0 ? uPixelationRadius * 0.9 : 1150.0;
-    float outerRadius = uPixelationRadius > 0.0 ? uPixelationRadius : 600.0;
+    float outerRadius = uPixelationRadius > 0.0 ? uPixelationRadius * 3.0 : 1800.0;
 
-    // Use smoothstep for a nicer transition
-    // We want smaller pixels (more pixelation) closer to the mouse
-    // Increasing the range (50->innerRadius, 300->outerRadius) makes the effect area larger
-    float pixelSizeFactor = 1.0 - smoothstep(innerRadius, outerRadius, dist);
+    // Custom cubic smoothstep for an even smoother transition
+    float t = clamp((dist - innerRadius) / (outerRadius - innerRadius), 0.0, 1.0);
+    float smoothT = t * t * (3.0 - 2.0 * t);
+
+    // Use advanced smoothing for a more gradual transition with an expanded outer edge
+    float pixelSizeFactor = 1.0 - smoothT;
+
+    // Apply a gentler power curve for an ultra-smooth falloff at the edges
+    pixelSizeFactor = pow(pixelSizeFactor, 1.35);
 
     // Start with a small pixelation and increase it based on mouse proximity
     // Using a more conservative range to avoid extreme pixelation
@@ -67,11 +76,17 @@ void main(void) {
     // Sample the texture
     vec4 texColor = texture2D(uSampler, pixelCoords);
 
+    // Original texture without pixelation
+    vec4 originalColor = texture2D(uSampler, uv);
+
     // Add subtle color shifting based on proximity to mouse
     if (pixelSizeFactor > 0.1) {
         vec3 shiftedColor = colorShift(texColor.rgb, uTime);
         texColor.rgb = mix(texColor.rgb, shiftedColor, pixelSizeFactor * 0.3);
     }
 
-    gl_FragColor = texColor;
+    // Blend between pixelated and original texture based on distance for smoother transition
+    // Use a different falloff curve specifically for the blend
+    float blendFactor = smoothstep(innerRadius * 0.9, outerRadius * 1.1, dist);
+    gl_FragColor = mix(texColor, originalColor, blendFactor);
 }
