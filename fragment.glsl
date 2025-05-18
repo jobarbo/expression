@@ -1,33 +1,21 @@
-precision highp float;
+varying vec2 vUv;
+uniform sampler2D u_texture;
+uniform vec2 u_mouse;
+uniform vec2 u_prevMouse;
 
-varying highp vec2 vTextureCoord;
-uniform sampler2D uSampler;
-uniform vec2 uResolution;
-uniform vec2 uMouse;
-uniform float uPixelationRadius;
-uniform float uPixelSize;
-uniform float uTime;
-uniform float uDevicePixelRatio;
+void main() {
+    vec2 gridUV = floor(vUv * vec2(44.0, 44.0)) / vec2(44.0, 44.0);
+    vec2 centerOfPixel = gridUV + vec2(44.0/11150.0, 44.0/11150.0);
 
-void main(void) {
-    // Get texture coordinates
-    vec2 uv = vTextureCoord;
+    vec2 mouseDirection = u_mouse - u_prevMouse;
 
-    // Convert to pixel coordinates
-    vec2 pixelCoord = uv * uResolution;
+    vec2 pixelToMouseDirection = centerOfPixel - u_mouse;
+    float pixelDistanceToMouse = length(pixelToMouseDirection);
+    float strength = smoothstep(0.1, 0.01, pixelDistanceToMouse);
 
-    // Get mouse coordinates
-    vec2 mouseCoord = uMouse * uResolution;
+    vec2 uvOffset = strength * -mouseDirection * 0.84;
+    vec2 uv = vUv - uvOffset;
 
-    // Calculate absolute distance on each axis separately
-    vec2 distVec = pixelCoord - mouseCoord;
-
-    // Use Euclidean distance for a circular radius instead of square
-    float dist = length(distVec);
-
-    // Sample the texture directly
-    vec4 texColor = texture2D(uSampler, uv);
-
-    // Output the sampled color
-    gl_FragColor = texColor;
+    vec4 color = texture2D(u_texture, uv);
+    gl_FragColor = color;
 }

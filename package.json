@@ -1,16 +1,14 @@
 {
-	"name": "vfx-js-test",
+	"name": "pixelation-effect",
 	"version": "1.0.0",
-	"description": "Testing VFX-JS shader effects",
+	"description": "Three.js Pixelation Effect with GLSL Shaders",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
 		"start": "vite",
 		"build": "vite build"
 	},
-	"dependencies": {
-		"@vfx-js/core": "latest"
-	},
+	"dependencies": {},
 	"devDependencies": {
 		"vite": "^4.4.0"
 	}

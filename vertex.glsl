@@ -1,9 +1,6 @@
-attribute vec4 aVertexPosition;
-attribute vec2 aTextureCoord;
+varying vec2 vUv;
 
-varying highp vec2 vTextureCoord;
-
-void main(void) {
-    gl_Position = aVertexPosition;
-    vTextureCoord = aTextureCoord;
+void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
