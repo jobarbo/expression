@@ -9,15 +9,6 @@ uniform float uPixelSize;
 uniform float uTime;
 uniform float uDevicePixelRatio;
 
-// Function to add some subtle color shifting
-vec3 colorShift(vec3 color, float shift) {
-    return vec3(
-        color.r + sin(shift * 0.3) * 0.1,
-        color.g + sin(shift * 0.2) * 0.1,
-        color.b + sin(shift * 0.1) * 0.1
-    );
-}
-
 void main(void) {
     // Get texture coordinates
     vec2 uv = vTextureCoord;
@@ -34,6 +25,9 @@ void main(void) {
     // Use Euclidean distance for a circular radius instead of square
     float dist = length(distVec);
 
+    // Sample the texture directly
+    vec4 texColor = texture2D(uSampler, uv);
 
+    // Output the sampled color
     gl_FragColor = texColor;
 }
