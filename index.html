@@ -19,10 +19,9 @@
 				flex-direction: column;
 				height: 100vh;
 				margin: 0;
-				background-color: #1a1a1a;
-				font-family: "Roobert", Arial, sans-serif;
+				background-color: #ffffff;
 				overflow: hidden;
-				color: white;
+				color: #1a1a1a;
 			}
 			#textContainer {
 				width: 100%;
@@ -39,45 +38,19 @@
 				top: 0;
 				left: 0;
 			}
-			.info {
-				position: absolute;
-				bottom: 20px;
-				color: rgba(255, 255, 255, 0.7);
-				font-size: 1rem;
-				z-index: 10;
-				text-align: center;
-				width: 100%;
-				padding: 10px;
-				background-color: rgba(0, 0, 0, 0.2);
-				border-radius: 5px;
-				backdrop-filter: blur(4px);
-				-webkit-backdrop-filter: blur(4px);
-				transition: opacity 0.3s ease;
-			}
-			.title {
-				position: absolute;
-				top: 20px;
-				left: 20px;
-				font-size: 1.2rem;
-				font-weight: bold;
-				z-index: 10;
-				opacity: 0.8;
-			}
 		</style>
 	</head>
 	<body>
 		<div id="textContainer"></div>
-		<div class="info">Move your mouse over the text to see pixelation effects</div>
-		<div class="title">EXPRESSION</div>
 
 		<script type="module">
 			// Import Three.js from CDN
 			import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js";
 
-			// Preload the font
+			// Preload the font before initializing
 			const fontLoader = new FontFace("Roobert", "url(./RoobertTRIAL-Regular.ttf)");
 
-			// Wait for the font to load before initializing the scene
+			// Wait for the font to load before initializing
 			fontLoader
 				.load()
 				.then((font) => {
@@ -93,13 +66,12 @@
 
 			function initApp() {
 				// Setup variables
+				const textContainer = document.getElementById("textContainer");
 				let easeFactor = 0.02;
 				let scene, camera, renderer, planeMesh;
 				let mousePosition = {x: 0.5, y: 0.5};
 				let targetMousePosition = {x: 0.5, y: 0.5};
 				let prevPosition = {x: 0.5, y: 0.5};
-				let mouseSpeed = 0;
-				const textContainer = document.getElementById("textContainer");
 
 				// Shader code
 				const vertexShader = `
@@ -115,91 +87,81 @@
 					uniform sampler2D u_texture;
 					uniform vec2 u_mouse;
 					uniform vec2 u_prevMouse;
-					uniform float u_mouseSpeed;
-					uniform float u_time;
 
 					void main() {
-						// Default to using the original uv coordinates (unpixelated)
-						vec2 uv = vUv;
+						vec2 gridUV = floor(vUv * vec2(44.0, 44.0)) / vec2(44.0, 44.0);
+						vec2 centerOfPixel = gridUV + vec2(44.0/11150.0, 44.0/11150.0);
 
-						// Calculate distance from current pixel to mouse position
-						float distToMouse = distance(vUv, u_mouse);
+						vec2 mouseDirection = u_mouse - u_prevMouse;
 
-						// Only pixelate when mouse is very close
-						if (distToMouse < 0.2) {
-							// Calculate pixel size - very fine pixels for subtle effect
-							float pixelSize = mix(75.0, 75.0, smoothstep(0.0002, 0.2, distToMouse));
+						vec2 pixelToMouseDirection = centerOfPixel - u_mouse;
+						float pixelDistanceToMouse = length(pixelToMouseDirection);
+						float strength = smoothstep(0.3, 0.0, pixelDistanceToMouse);
 
-							// Create the pixelated grid effect only near the mouse
-							vec2 gridUV = floor(vUv * pixelSize) / pixelSize;
+						vec2 uvOffset = strength * -mouseDirection * 0.4;
+						vec2 uv = vUv - uvOffset;
 
-							// Apply the minimal pixelation
-							uv = gridUV;
-
-							// Almost imperceptible displacement
-							if (distToMouse < 0.05) {
-								vec2 mouseDirection = u_mouse - u_prevMouse;
-								uv -= mouseDirection * 0.01 * smoothstep(0.05, 0.0, distToMouse);
-							}
-
-							// Very smooth transition at the edges
-							if (distToMouse > 0.00001 && distToMouse < 0.5) {
-								float mixFactor = smoothstep(0.2, 0.15, distToMouse);
-								uv = mix(vUv, uv, mixFactor);
-							}
-						}
-
-						// Sample texture with our final UV coordinates
 						vec4 color = texture2D(u_texture, uv);
-
 						gl_FragColor = color;
 					}
 				`;
 
 				// Function to create canvas texture with text
-				function createTextTexture(text, font, size, color, fontWeight = "bold") {
+				function createTextTexture(text, font, size, color, fontWeight = "100") {
 					const canvas = document.createElement("canvas");
 					const ctx = canvas.getContext("2d");
 
-					// Make canvas size responsive to window size
-					const canvasWidth = Math.max(window.innerWidth, window.innerHeight) * 2;
-					const canvasHeight = canvasWidth * (window.innerHeight / window.innerWidth);
+					const canvasWidth = window.innerWidth * 2;
+					const canvasHeight = window.innerHeight * 2;
 
 					canvas.width = canvasWidth;
 					canvas.height = canvasHeight;
 
-					// Background color
-					ctx.fillStyle = "#fff";
+					// Set canvas background to white for high contrast
+					ctx.fillStyle = color || "#ffffff";
 					ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-					// Calculate font size - use larger font for better visibility
-					const fontSize = size || Math.floor(canvasWidth / 6);
+					// Make text size more prominent
+					const fontSize = size || Math.floor(canvasWidth / 4);
 
-					// Text styling - use Roobert font
-					ctx.fillStyle = color || "#000";
-					ctx.font = `${fontWeight} ${fontSize}px 'Roobert', sans-serif`;
+					ctx.fillStyle = "#000000"; // Darker text for better contrast
+					ctx.font = `bold ${fontSize}px "Roobert", sans-serif`;
+					console.log("Using font:", ctx.font);
 					ctx.textAlign = "center";
 					ctx.textBaseline = "middle";
 
-					// Enable anti-aliasing
 					ctx.imageSmoothingEnabled = true;
 					ctx.imageSmoothingQuality = "high";
 
-					// Measure text to properly scale it
 					const textMetrics = ctx.measureText(text);
 					const textWidth = textMetrics.width;
+					console.log("Text width:", textWidth, "Canvas width:", canvasWidth);
 
-					// Calculate scale to fit the text width into the canvas
-					const scaleFactor = Math.min(1, (canvasWidth * 0.8) / textWidth);
+					// Increase scale factor to make text larger
+					const scaleFactor = Math.min(1.5, (canvasWidth * 0.8) / textWidth);
 					const aspectCorrection = canvasWidth / canvasHeight;
 
-					// Set transformation matrix for centering and scaling
 					ctx.setTransform(scaleFactor, 0, 0, scaleFactor / aspectCorrection, canvasWidth / 2, canvasHeight / 2);
 
-					// Draw text with clean edges
+					ctx.strokeStyle = "#1a1a1a";
+					ctx.lineWidth = fontSize * 0.005;
+					for (let i = 0; i < 3; i++) {
+						ctx.strokeText(text, 0, 0);
+					}
 					ctx.fillText(text, 0, 0);
 
-					// Create a Three.js texture from the canvas
+					// For debugging - append canvas to document to see what's being drawn
+					/*
+					canvas.style.position = "fixed";
+					canvas.style.top = "10px";
+					canvas.style.left = "10px";
+					canvas.style.zIndex = "1000";
+					canvas.style.width = "300px";
+					canvas.style.height = "150px";
+					canvas.style.border = "1px solid red";
+					document.body.appendChild(canvas);
+					*/
+
 					return new THREE.CanvasTexture(canvas);
 				}
 
@@ -207,21 +169,16 @@
 				function initializeScene(texture) {
 					scene = new THREE.Scene();
 
-					// Use orthographic camera for 2D-style rendering
 					const aspectRatio = window.innerWidth / window.innerHeight;
 					camera = new THREE.OrthographicCamera(-1, 1, 1 / aspectRatio, -1 / aspectRatio, 0.1, 1000);
 					camera.position.z = 1;
 
-					// Create shader uniforms
 					let shaderUniforms = {
 						u_mouse: {type: "v2", value: new THREE.Vector2()},
 						u_prevMouse: {type: "v2", value: new THREE.Vector2()},
 						u_texture: {type: "t", value: texture},
-						u_mouseSpeed: {type: "f", value: 0.0},
-						u_time: {type: "f", value: 0.0},
 					};
 
-					// Create a plane with the shader material
 					planeMesh = new THREE.Mesh(
 						new THREE.PlaneGeometry(2, 2),
 						new THREE.ShaderMaterial({
@@ -233,61 +190,37 @@
 
 					scene.add(planeMesh);
 
-					// Setup renderer with better quality
-					renderer = new THREE.WebGLRenderer({
-						antialias: true,
-						alpha: true,
-					});
-					renderer.setClearColor(0x1a1a1a, 1);
+					renderer = new THREE.WebGLRenderer({antialias: true});
+					renderer.setClearColor(0xffffff, 1);
 					renderer.setSize(window.innerWidth, window.innerHeight);
-					renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit for performance
+					renderer.setPixelRatio(window.devicePixelRatio);
 
-					// Add renderer to the container
 					textContainer.appendChild(renderer.domElement);
 				}
 
-				// Initialize the scene with our text texture
-				initializeScene(createTextTexture("EXPRESSION", "'Roobert'", null, "#000", "normal"));
+				function reloadTexture() {
+					const newTexture = createTextTexture("EXPRESSION", "Roobert", null, "#ffffff", "100");
+					planeMesh.material.uniforms.u_texture.value = newTexture;
+				}
+
+				// Initialize with text texture
+				initializeScene(createTextTexture("EXPRESSION", "Roobert", null, "#ffffff", "100"));
 
 				// Animation loop
-				let startTime = Date.now();
 				function animateScene() {
 					requestAnimationFrame(animateScene);
 
-					// Store current position for velocity calculation
-					const oldX = mousePosition.x;
-					const oldY = mousePosition.y;
-
-					// Smooth mouse movement with easing
 					mousePosition.x += (targetMousePosition.x - mousePosition.x) * easeFactor;
 					mousePosition.y += (targetMousePosition.y - mousePosition.y) * easeFactor;
 
-					// Calculate mouse speed (distance moved since last frame)
-					const dx = mousePosition.x - oldX;
-					const dy = mousePosition.y - oldY;
-					mouseSpeed = Math.sqrt(dx * dx + dy * dy);
-
-					// Gradually decay mouse speed
-					mouseSpeed = Math.min(1.0, mouseSpeed * 15.0);
-
-					// Update shader uniforms with mouse positions and speed
 					planeMesh.material.uniforms.u_mouse.value.set(mousePosition.x, 1.0 - mousePosition.y);
 
 					planeMesh.material.uniforms.u_prevMouse.value.set(prevPosition.x, 1.0 - prevPosition.y);
 
-					planeMesh.material.uniforms.u_mouseSpeed.value = mouseSpeed;
-
-					// Update time uniform for animations
-					planeMesh.material.uniforms.u_time.value = (Date.now() - startTime) / 1000;
-
-					// Update previous position for motion trail
-					prevPosition = {x: oldX, y: oldY};
-
-					// Render the scene
 					renderer.render(scene, camera);
 				}
 
-				// Start the animation loop
+				// Start animation
 				animateScene();
 
 				// Event handlers for mouse movement
@@ -296,39 +229,31 @@
 				textContainer.addEventListener("mouseleave", handleMouseLeave);
 
 				function handleMouseMove(event) {
-					easeFactor = 0.035; // Medium speed tracking
+					easeFactor = 0.035;
 					let rect = textContainer.getBoundingClientRect();
-					prevPosition = {...mousePosition};
+					prevPosition = {...targetMousePosition};
 
 					targetMousePosition.x = (event.clientX - rect.left) / rect.width;
 					targetMousePosition.y = (event.clientY - rect.top) / rect.height;
 				}
 
 				function handleMouseEnter(event) {
-					easeFactor = 0.1; // Fast response on enter
+					easeFactor = 0.01;
 					let rect = textContainer.getBoundingClientRect();
 
-					// Set both target and current positions to avoid jumps
 					mousePosition.x = targetMousePosition.x = (event.clientX - rect.left) / rect.width;
 					mousePosition.y = targetMousePosition.y = (event.clientY - rect.top) / rect.height;
-
-					// Hide the info text after user starts interacting
-					setTimeout(() => {
-						document.querySelector(".info").style.opacity = "0";
-					}, 2000);
 				}
 
 				function handleMouseLeave() {
-					easeFactor = 0.01; // Slow trailing effect when leaving
-					// Keep the target at current position to avoid jumps
-					targetMousePosition = {...mousePosition};
+					easeFactor = 0.01;
+					targetMousePosition = {...prevPosition};
 				}
 
 				// Handle window resize
 				window.addEventListener("resize", onWindowResize, false);
 
 				function onWindowResize() {
-					// Update camera aspect ratio
 					const aspectRatio = window.innerWidth / window.innerHeight;
 					camera.left = -1;
 					camera.right = 1;
@@ -336,11 +261,9 @@
 					camera.bottom = -1 / aspectRatio;
 					camera.updateProjectionMatrix();
 
-					// Update renderer size
 					renderer.setSize(window.innerWidth, window.innerHeight);
 
-					// Recreate the texture for the new window size
-					planeMesh.material.uniforms.u_texture.value = createTextTexture("EXPRESSION", "'Roobert'", null, "#000", "normal");
+					reloadTexture();
 				}
 			}
 		</script>
