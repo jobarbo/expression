@@ -1,0 +1,17 @@
+{
+	"name": "vfx-js-test",
+	"version": "1.0.0",
+	"description": "Testing VFX-JS shader effects",
+	"main": "main.js",
+	"type": "module",
+	"scripts": {
+		"start": "vite",
+		"build": "vite build"
+	},
+	"dependencies": {
+		"@vfx-js/core": "latest"
+	},
+	"devDependencies": {
+		"vite": "^4.4.0"
+	}
+}
