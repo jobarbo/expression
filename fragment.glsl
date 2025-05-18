@@ -47,8 +47,10 @@ void main(void) {
     // Use advanced smoothing for a more gradual transition with an expanded outer edge
     float pixelSizeFactor = 1.0 - smoothT;
 
-    // Apply a gentler power curve for an ultra-smooth falloff at the edges
-    pixelSizeFactor = pow(pixelSizeFactor, 1.35);
+    // Apply a minimum pixelation everywhere
+    float basePixelSize = 0.01 + distanceNormalized / uDevicePixelRatio;
+    float prx = 0.0001 - distanceNormalized / uDevicePixelRatio;
+    float pry = 2.0 - distanceNormalized / uDevicePixelRatio;
 
     // Start with a small pixelation and increase it based on mouse proximity
     // Using a more conservative range to avoid extreme pixelation
