@@ -43,8 +43,8 @@ void main(void) {
 
     // Apply a minimum pixelation everywhere
     float basePixelSize = 0.01 + distanceNormalized / uDevicePixelRatio;
-    float prx = 0.01 - distanceNormalized / uDevicePixelRatio;
-    float pry = 1.0 - distanceNormalized / uDevicePixelRatio;
+    float prx = 0.0001 - distanceNormalized / uDevicePixelRatio;
+    float pry = 2.0 - distanceNormalized / uDevicePixelRatio;
 
     // Calculate final pixel size
     float finalPixelSize = mix(basePixelSize, uPixelSize / uDevicePixelRatio, pixelSizeFactor);

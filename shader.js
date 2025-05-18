@@ -76,26 +76,20 @@ document.addEventListener("DOMContentLoaded", function () {
 		// Resize canvas to match container size and account for DPI
 		function resizeCanvas() {
 			const rect = container.getBoundingClientRect();
+			const titleRect = title.getBoundingClientRect();
 
 			// Set the display size (CSS pixels)
 			canvas.style.width = rect.width + "px";
-			canvas.style.height = rect.height + "px";
+			canvas.style.height = titleRect.height + "px";
 
 			// Set the actual size in memory (scaled for high DPI)
 			canvas.width = Math.floor(rect.width * devicePixelRatio);
-			canvas.height = Math.floor(rect.height * devicePixelRatio);
+			canvas.height = Math.floor(titleRect.height * devicePixelRatio);
 
-			// Position the canvas as an overlay exactly matching the container
+			// Position the canvas as an overlay exactly matching the h1 element
 			canvas.style.position = "absolute";
-			canvas.style.top = "0";
+			canvas.style.top = titleRect.top - container.getBoundingClientRect().top + "px";
 			canvas.style.left = "0";
-
-			// Update title position to be centered
-			title.style.position = "absolute";
-			title.style.top = "50%";
-			title.style.left = "50%";
-			title.style.transform = "translate(-50%, -50%)";
-			title.style.margin = "0";
 
 			// Update the viewport to match the new canvas size
 			gl.viewport(0, 0, canvas.width, canvas.height);
@@ -206,7 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			}
 
 			// Draw text in the center of the canvas (right-side up)
-			// Divide by devicePixelRatio to get the correct center in logical pixels
+			// Since canvas is now at the same height as the h1, center text horizontally only
 			ctx.fillText(title.textContent, tempCanvas.width / (2 * devicePixelRatio), tempCanvas.height / (2 * devicePixelRatio));
 
 			// Update WebGL texture with this canvas
