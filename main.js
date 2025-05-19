@@ -75,7 +75,7 @@ function initApp() {
 		console.log("Text width:", textWidth, "Canvas width:", canvasWidth);
 
 		// Increase scale factor to make text larger
-		const scaleFactor = Math.min(2, (canvasWidth * 1) / textWidth);
+		const scaleFactor = (canvasWidth * 1) / textWidth;
 		const aspectCorrection = canvasWidth / canvasHeight;
 
 		ctx.setTransform(scaleFactor, 0, 0, scaleFactor / aspectCorrection, canvasWidth / 2, canvasHeight / 2);
