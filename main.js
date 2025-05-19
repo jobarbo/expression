@@ -3,12 +3,15 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.m
 
 // Setup variables
 const textContainer = document.querySelector("[data-expression-container]");
-const expressionText = document.querySelector("[data-expression-text]").textContent;
+const textElement = document.querySelector("[data-expression-text]");
+const expressionText = textElement.textContent;
 let easeFactor = 0.02;
 let scene, camera, renderer, planeMesh;
 let mousePosition = {x: 0.5, y: 0.5};
 let targetMousePosition = {x: 0.5, y: 0.5};
 let prevPosition = {x: 0.5, y: 0.5};
+
+let text_color = textElement.getAttribute("data-text-color");
 
 // Vertex shader will be loaded from external file
 let vertexShader;
@@ -36,9 +39,9 @@ function initApp() {
 		const canvas = document.createElement("canvas");
 		const ctx = canvas.getContext("2d");
 
-		const canvasWidth = window.innerWidth * 2;
-		const canvasHeight = window.innerHeight * 2;
-
+		const canvasWidth = textContainer.clientWidth * 4;
+		const canvasHeight = textContainer.clientHeight * 4;
+		console.log(canvasWidth, canvasHeight);
 		canvas.width = canvasWidth;
 		canvas.height = canvasHeight;
 
@@ -63,12 +66,11 @@ function initApp() {
 		console.log("Text width:", textWidth, "Canvas width:", canvasWidth);
 
 		// Increase scale factor to make text larger
-		const scaleFactor = Math.min(1.5, (canvasWidth * 1) / textWidth);
+		const scaleFactor = Math.min(2, (canvasWidth * 1) / textWidth);
 		const aspectCorrection = canvasWidth / canvasHeight;
 
 		ctx.setTransform(scaleFactor, 0, 0, scaleFactor / aspectCorrection, canvasWidth / 2, canvasHeight / 2);
 
-		ctx.strokeStyle = "#000";
 		ctx.fillText(text, 0, 0);
 
 		// For debugging - append canvas to document to see what's being drawn
@@ -90,7 +92,7 @@ function initApp() {
 	function initializeScene(texture) {
 		scene = new THREE.Scene();
 
-		const aspectRatio = window.innerWidth / window.innerHeight;
+		const aspectRatio = textContainer.clientWidth / textContainer.clientHeight;
 		camera = new THREE.OrthographicCamera(-1, 1, 1 / aspectRatio, -1 / aspectRatio, 0.1, 1000);
 		camera.position.z = 1;
 
@@ -120,8 +122,8 @@ function initApp() {
 
 				renderer = new THREE.WebGLRenderer({antialias: true});
 				renderer.setClearColor(0xffffff, 1);
-				renderer.setSize(window.innerWidth, window.innerHeight);
-				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer.setSize(textContainer.clientWidth, textContainer.clientHeight);
+				renderer.setPixelRatio(4);
 
 				textContainer.appendChild(renderer.domElement);
 
@@ -134,14 +136,14 @@ function initApp() {
 	}
 
 	function reloadTexture() {
-		const newTexture = createTextTexture(expressionText, "Roobert", null, "#1bb2ad", "100");
+		const newTexture = createTextTexture(expressionText, "Roobert", null, text_color, "100");
 		if (planeMesh && planeMesh.material && planeMesh.material.uniforms) {
 			planeMesh.material.uniforms.u_texture.value = newTexture;
 		}
 	}
 
 	// Initialize with text texture
-	initializeScene(createTextTexture(expressionText, "Roobert", null, "#1bb2ad", "100"));
+	initializeScene(createTextTexture(expressionText, "Roobert", null, text_color, "100"));
 
 	// Animation loop
 	function animateScene() {
@@ -166,7 +168,7 @@ function initApp() {
 	textContainer.addEventListener("mouseleave", handleMouseLeave);
 
 	function handleMouseMove(event) {
-		easeFactor = 0.035;
+		easeFactor = 0.065;
 		let rect = textContainer.getBoundingClientRect();
 		prevPosition = {...targetMousePosition};
 
@@ -183,7 +185,7 @@ function initApp() {
 	}
 
 	function handleMouseLeave() {
-		easeFactor = 0.01;
+		easeFactor = 0.1;
 		targetMousePosition = {...prevPosition};
 	}
 
