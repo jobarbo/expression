@@ -36,18 +36,26 @@ function initApp() {
 		const canvas = document.createElement("canvas");
 		const ctx = canvas.getContext("2d");
 
-		const canvasWidth = textContainer.offsetHeight;
-		const canvasHeight = textContainer.offsetWidth;
+		// Fix: Use correct dimensions
+		const canvasWidth = textContainer.offsetWidth;
+		const canvasHeight = textContainer.offsetHeight;
 
-		canvas.width = canvasWidth;
-		canvas.height = canvasHeight;
+		// Account for high-DPI displays
+		const pixelRatio = window.devicePixelRatio || 1;
+
+		// Set canvas size with pixel ratio consideration
+		canvas.width = canvasWidth * pixelRatio;
+		canvas.height = canvasHeight * pixelRatio;
+
+		// Scale the context to account for the pixel ratio
+		ctx.scale(pixelRatio, pixelRatio);
 
 		// Set canvas background to be transparent
 		ctx.fillStyle = "transparent";
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
 		// Make text size more prominent
-		const fontSize = size || Math.floor(canvasWidth / 4);
+		const fontSize = size || Math.floor(canvasWidth / 2);
 
 		ctx.fillStyle = color; // Darker text for better contrast
 		ctx.font = `bold ${fontSize}px "Roobert", sans-serif`;
@@ -63,9 +71,13 @@ function initApp() {
 		const scaleFactor = Math.min(1.5, (canvasWidth * 1) / textWidth);
 		const aspectCorrection = canvasWidth / canvasHeight;
 
-		ctx.setTransform(scaleFactor, 0, 0, scaleFactor / aspectCorrection, canvasWidth / 2, canvasHeight / 2);
+		ctx.setTransform(scaleFactor * pixelRatio, 0, 0, (scaleFactor / aspectCorrection) * pixelRatio, (canvasWidth / 2) * pixelRatio, (canvasHeight / 2) * pixelRatio);
 
-		ctx.strokeStyle = "#000";
+		// Improve text rendering quality
+		ctx.imageSmoothingEnabled = true;
+		ctx.imageSmoothingQuality = "high";
+
+		// Use fillText for smoother text
 		ctx.fillText(text, 0, 0);
 
 		// For debugging - append canvas to document to see what's being drawn
@@ -115,10 +127,20 @@ function initApp() {
 
 				scene.add(planeMesh);
 
-				renderer = new THREE.WebGLRenderer({antialias: true});
+				renderer = new THREE.WebGLRenderer({
+					antialias: true,
+					alpha: true,
+					powerPreference: "high-performance",
+				});
 				renderer.setClearColor(0xffffff, 1);
 				renderer.setSize(textContainer.offsetWidth, textContainer.offsetHeight);
 				renderer.setPixelRatio(window.devicePixelRatio);
+
+				// Enable texture filtering
+				planeMesh.material.map = texture;
+				planeMesh.material.magFilter = THREE.LinearFilter;
+				planeMesh.material.minFilter = THREE.LinearMipMapLinearFilter;
+				planeMesh.material.needsUpdate = true;
 
 				textContainer.appendChild(renderer.domElement);
 
