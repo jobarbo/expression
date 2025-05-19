@@ -2,7 +2,8 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js";
 
 // Setup variables
-const textContainer = document.getElementById("textContainer");
+const textContainer = document.querySelector("[data-expression-container]");
+const expressionText = document.querySelector("[data-expression-text]").textContent;
 let easeFactor = 0.02;
 let scene, camera, renderer, planeMesh;
 let mousePosition = {x: 0.5, y: 0.5};
@@ -31,7 +32,7 @@ fontLoader
 
 function initApp() {
 	// Function to create canvas texture with text
-	function createTextTexture(text, font, size, color, fontWeight = "100") {
+	function createTextTexture(text, font, size, color = "#000", fontWeight = "100") {
 		const canvas = document.createElement("canvas");
 		const ctx = canvas.getContext("2d");
 
@@ -41,14 +42,14 @@ function initApp() {
 		canvas.width = canvasWidth;
 		canvas.height = canvasHeight;
 
-		// Set canvas background to white for high contrast
-		ctx.fillStyle = color || "#ffffff";
+		// Set canvas background to be transparent
+		ctx.fillStyle = "transparent";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
 		// Make text size more prominent
 		const fontSize = size || Math.floor(canvasWidth / 4);
 
-		ctx.fillStyle = "#000000"; // Darker text for better contrast
+		ctx.fillStyle = color; // Darker text for better contrast
 		ctx.font = `bold ${fontSize}px "Roobert", sans-serif`;
 		console.log("Using font:", ctx.font);
 		ctx.textAlign = "center";
@@ -62,16 +63,12 @@ function initApp() {
 		console.log("Text width:", textWidth, "Canvas width:", canvasWidth);
 
 		// Increase scale factor to make text larger
-		const scaleFactor = Math.min(1.5, (canvasWidth * 0.8) / textWidth);
+		const scaleFactor = Math.min(1.5, (canvasWidth * 1) / textWidth);
 		const aspectCorrection = canvasWidth / canvasHeight;
 
 		ctx.setTransform(scaleFactor, 0, 0, scaleFactor / aspectCorrection, canvasWidth / 2, canvasHeight / 2);
 
-		ctx.strokeStyle = "#1a1a1a";
-		ctx.lineWidth = fontSize * 0.005;
-		for (let i = 0; i < 3; i++) {
-			ctx.strokeText(text, 0, 0);
-		}
+		ctx.strokeStyle = "#000";
 		ctx.fillText(text, 0, 0);
 
 		// For debugging - append canvas to document to see what's being drawn
@@ -137,14 +134,14 @@ function initApp() {
 	}
 
 	function reloadTexture() {
-		const newTexture = createTextTexture("EXPRESSION", "Roobert", null, "#ffffff", "100");
+		const newTexture = createTextTexture(expressionText, "Roobert", null, "#1bb2ad", "100");
 		if (planeMesh && planeMesh.material && planeMesh.material.uniforms) {
 			planeMesh.material.uniforms.u_texture.value = newTexture;
 		}
 	}
 
 	// Initialize with text texture
-	initializeScene(createTextTexture("EXPRESSION", "Roobert", null, "#ffffff", "100"));
+	initializeScene(createTextTexture(expressionText, "Roobert", null, "#1bb2ad", "100"));
 
 	// Animation loop
 	function animateScene() {

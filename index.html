@@ -23,7 +23,7 @@
 				overflow: hidden;
 				color: #1a1a1a;
 			}
-			#textContainer {
+			[data-expression-container] {
 				width: 100%;
 				height: 100vh;
 				position: relative;
@@ -31,6 +31,12 @@
 				display: flex;
 				justify-content: center;
 				align-items: center;
+			}
+			[data-expression-text] {
+				font-size: 4rem;
+				font-weight: 100;
+				font-family: "Roobert", sans-serif;
+				color: #1a1a1a;
 			}
 			canvas {
 				display: block;
@@ -41,7 +47,9 @@
 		</style>
 	</head>
 	<body>
-		<div id="textContainer"></div>
+		<div data-expression-container>
+			<h1 data-expression-text>Hello</h1>
+		</div>
 		<script type="module" src="main.js"></script>
 	</body>
 </html>
