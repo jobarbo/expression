@@ -13,7 +13,7 @@ void main() {
     float pixelDistanceToMouse = length(pixelToMouseDirection);
     float strength = smoothstep(0.3, 0.0001, pixelDistanceToMouse);
 
-    vec2 uvOffset = strength * -mouseDirection * 0.44;
+    vec2 uvOffset = strength * -mouseDirection * 0.14;
     vec2 uv = vUv - uvOffset;
 
     vec4 color = texture2D(u_texture, uv);
