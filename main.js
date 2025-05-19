@@ -8,55 +8,14 @@ let prevMousePos = {x: 0.5, y: 0.5};
 let targetMousePos = {x: 0.5, y: 0.5};
 let easeFactor = 0.02;
 let canvas;
-
-// Vertex shader code
-const vertexShaderCode = `
-attribute vec3 aPosition;
-attribute vec2 aTexCoord;
-
-varying vec2 vUv;
-
-void main() {
-  // Fix the texture coordinates by flipping the y-axis
-  vUv = vec2(aTexCoord.x, 1.0 - aTexCoord.y);
-
-  // Scale to fill the entire viewport
-  vec4 positionVec4 = vec4(aPosition, 1.0);
-  positionVec4.xy = positionVec4.xy * 2.0;  // Scale to fill viewport
-  gl_Position = positionVec4;
-}
-`;
-
-// Fragment shader code
-const fragmentShaderCode = `
-precision mediump float;
-
-varying vec2 vUv;
-uniform sampler2D u_texture;
-uniform vec2 u_mouse;
-uniform vec2 u_prevMouse;
-
-void main() {
-    vec2 gridUV = floor(vUv * vec2(44.0, 44.0)) / vec2(44.0, 44.0);
-    vec2 centerOfPixel = gridUV + vec2(44.0/11150.0, 44.0/11150.0);
-
-    vec2 mouseDirection = u_mouse - u_prevMouse;
-
-    vec2 pixelToMouseDirection = centerOfPixel - u_mouse;
-    float pixelDistanceToMouse = length(pixelToMouseDirection);
-    float strength = smoothstep(0.1, 0.01, pixelDistanceToMouse);
-
-    vec2 uvOffset = strength * -mouseDirection * 0.84;
-    vec2 uv = vUv - uvOffset;
-
-    vec4 color = texture2D(u_texture, uv);
-    gl_FragColor = color;
-}
-`;
+let vertShader;
+let fragShader;
 
 function preload() {
-	// Preload the font
+	// Preload the font and shader files
 	fontRegular = loadFont("./RoobertTRIAL-Regular.ttf");
+	vertShader = loadStrings("vertex.glsl");
+	fragShader = loadStrings("fragment.glsl");
 }
 
 function setup() {
@@ -64,15 +23,15 @@ function setup() {
 	const textContainer = document.querySelector("[data-expression-container]");
 	expressionText = document.querySelector("[data-expression-text]").textContent;
 
-	// Create canvas with the same dimensions as the container
+	// Create canvas with the container dimensions
 	canvas = createCanvas(textContainer.offsetWidth, textContainer.offsetHeight, WEBGL);
 	canvas.parent(textContainer);
 
 	// Set pixel density to match display
 	pixelDensity(window.devicePixelRatio);
 
-	// Create the shader
-	myShader = createShader(vertexShaderCode, fragmentShaderCode);
+	// Create the shader using external files
+	myShader = createShader(vertShader.join("\n"), fragShader.join("\n"));
 
 	// Create text texture
 	updateTextTexture();
@@ -98,9 +57,9 @@ function draw() {
 	myShader.setUniform("u_texture", textGraphics);
 	myShader.setUniform("u_mouse", [mousePos.x, mousePos.y]);
 	myShader.setUniform("u_prevMouse", [prevMousePos.x, prevMousePos.y]);
+	myShader.setUniform("u_resolution", [width, height]);
 
 	// Draw a rectangle covering the entire canvas
-	// In WEBGL mode, the origin is at the center, so we need to use the full width/height
 	push();
 	translate(0, 0, 0);
 	plane(width, height);

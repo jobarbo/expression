@@ -1,21 +1,33 @@
+precision mediump float;
+
 varying vec2 vUv;
 uniform sampler2D u_texture;
 uniform vec2 u_mouse;
 uniform vec2 u_prevMouse;
 
 void main() {
-    vec2 gridUV = floor(vUv * vec2(44.0, 44.0)) / vec2(44.0, 44.0);
-    vec2 centerOfPixel = gridUV + vec2(44.0/11150.0, 44.0/11150.0);
+    vec2 aspectRatio = vec2(1.0, 1.0);
+    vec2 uv = vUv;
+    uv.x = (uv.x - 0.5) * aspectRatio.x + 0.5;
 
-    vec2 mouseDirection = u_mouse - u_prevMouse;
+    vec2 gridUV = floor(uv * vec2(22.0, 22.0)) / vec2(22.0, 22.0);
+    vec2 centerOfPixel = gridUV + vec2(22.0/1234.0, 22.0/1234.0);
 
-    vec2 pixelToMouseDirection = centerOfPixel - u_mouse;
+    // Adjust mouse coordinates to match UV space aspect ratio
+    vec2 adjustedMouse = u_mouse;
+    adjustedMouse.x = (adjustedMouse.x - 0.5) * aspectRatio.x + 0.5;
+    vec2 adjustedPrevMouse = u_prevMouse;
+    adjustedPrevMouse.x = (adjustedPrevMouse.x - 0.5) * aspectRatio.x + 0.5;
+
+    vec2 mouseDirection = adjustedMouse - adjustedPrevMouse;
+
+    vec2 pixelToMouseDirection = centerOfPixel - adjustedMouse;
     float pixelDistanceToMouse = length(pixelToMouseDirection);
     float strength = smoothstep(0.1, 0.01, pixelDistanceToMouse);
 
     vec2 uvOffset = strength * -mouseDirection * 0.84;
-    vec2 uv = vUv - uvOffset;
+    vec2 finalUV = uv - uvOffset;
 
-    vec4 color = texture2D(u_texture, uv);
+    vec4 color = texture2D(u_texture, finalUV);
     gl_FragColor = color;
 }
