@@ -1,209 +1,163 @@
-// Import Three.js from CDN
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js";
-
-// Setup variables
-const textContainer = document.querySelector("[data-expression-container]");
-const expressionText = document.querySelector("[data-expression-text]").textContent;
+// p5.js implementation of text distortion effect
+let myShader;
+let textGraphics;
+let expressionText;
+let fontRegular;
+let mousePos = {x: 0.5, y: 0.5};
+let prevMousePos = {x: 0.5, y: 0.5};
+let targetMousePos = {x: 0.5, y: 0.5};
 let easeFactor = 0.02;
-let scene, camera, renderer, planeMesh;
-let mousePosition = {x: 0.5, y: 0.5};
-let targetMousePosition = {x: 0.5, y: 0.5};
-let prevPosition = {x: 0.5, y: 0.5};
+let canvas;
 
-// Vertex shader will be loaded from external file
-let vertexShader;
+// Vertex shader code
+const vertexShaderCode = `
+attribute vec3 aPosition;
+attribute vec2 aTexCoord;
 
-// Preload the font before initializing
-const fontLoader = new FontFace("Roobert", "url(./RoobertTRIAL-Regular.ttf)");
+varying vec2 vUv;
 
-// Wait for the font to load before initializing
-fontLoader
-	.load()
-	.then((font) => {
-		document.fonts.add(font);
-		console.log("Font loaded successfully");
-		initApp();
-	})
-	.catch((err) => {
-		console.error("Font loading error:", err);
-		// Initialize anyway as fallback
-		initApp();
-	});
+void main() {
+  // Fix the texture coordinates by flipping the y-axis
+  vUv = vec2(aTexCoord.x, 1.0 - aTexCoord.y);
 
-function initApp() {
-	// Function to create canvas texture with text
-	function createTextTexture(text, font, size, color = "#000", fontWeight = "100") {
-		const canvas = document.createElement("canvas");
-		const ctx = canvas.getContext("2d");
+  // Scale to fill the entire viewport
+  vec4 positionVec4 = vec4(aPosition, 1.0);
+  positionVec4.xy = positionVec4.xy * 2.0;  // Scale to fill viewport
+  gl_Position = positionVec4;
+}
+`;
 
-		// Fix: Use correct dimensions
-		const canvasWidth = textContainer.offsetWidth;
-		const canvasHeight = textContainer.offsetHeight;
+// Fragment shader code
+const fragmentShaderCode = `
+precision mediump float;
 
-		// Account for high-DPI displays
-		const pixelRatio = window.devicePixelRatio || 1;
+varying vec2 vUv;
+uniform sampler2D u_texture;
+uniform vec2 u_mouse;
+uniform vec2 u_prevMouse;
 
-		// Set canvas size with pixel ratio consideration
-		canvas.width = canvasWidth * pixelRatio;
-		canvas.height = canvasHeight * pixelRatio;
+void main() {
+    vec2 gridUV = floor(vUv * vec2(44.0, 44.0)) / vec2(44.0, 44.0);
+    vec2 centerOfPixel = gridUV + vec2(44.0/11150.0, 44.0/11150.0);
 
-		// Scale the context to account for the pixel ratio
-		ctx.scale(pixelRatio, pixelRatio);
+    vec2 mouseDirection = u_mouse - u_prevMouse;
 
-		// Set canvas background to be transparent
-		ctx.fillStyle = "transparent";
-		ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    vec2 pixelToMouseDirection = centerOfPixel - u_mouse;
+    float pixelDistanceToMouse = length(pixelToMouseDirection);
+    float strength = smoothstep(0.1, 0.01, pixelDistanceToMouse);
 
-		// Make text size more prominent
-		const fontSize = size || Math.floor(canvasWidth / 2);
+    vec2 uvOffset = strength * -mouseDirection * 0.84;
+    vec2 uv = vUv - uvOffset;
 
-		ctx.fillStyle = color; // Darker text for better contrast
-		ctx.font = `bold ${fontSize}px "Roobert", sans-serif`;
-		console.log("Using font:", ctx.font);
-		ctx.textAlign = "center";
-		ctx.textBaseline = "middle";
+    vec4 color = texture2D(u_texture, uv);
+    gl_FragColor = color;
+}
+`;
 
-		const textMetrics = ctx.measureText(text);
-		const textWidth = textMetrics.width;
-		console.log("Text width:", textWidth, "Canvas width:", canvasWidth);
+function preload() {
+	// Preload the font
+	fontRegular = loadFont("./RoobertTRIAL-Regular.ttf");
+}
 
-		// Increase scale factor to make text larger
-		const scaleFactor = Math.min(1.5, (canvasWidth * 1) / textWidth);
-		const aspectCorrection = canvasWidth / canvasHeight;
+function setup() {
+	// Get the text container element for dimensions
+	const textContainer = document.querySelector("[data-expression-container]");
+	expressionText = document.querySelector("[data-expression-text]").textContent;
 
-		ctx.setTransform(scaleFactor * pixelRatio, 0, 0, (scaleFactor / aspectCorrection) * pixelRatio, (canvasWidth / 2) * pixelRatio, (canvasHeight / 2) * pixelRatio);
+	// Create canvas with the same dimensions as the container
+	canvas = createCanvas(textContainer.offsetWidth, textContainer.offsetHeight, WEBGL);
+	canvas.parent(textContainer);
 
-		// Improve text rendering quality
-		ctx.imageSmoothingEnabled = true;
-		ctx.imageSmoothingQuality = "high";
+	// Set pixel density to match display
+	pixelDensity(window.devicePixelRatio);
 
-		// Use fillText for smoother text
-		ctx.fillText(text, 0, 0);
+	// Create the shader
+	myShader = createShader(vertexShaderCode, fragmentShaderCode);
 
-		// For debugging - append canvas to document to see what's being drawn
-		/*
-		canvas.style.position = "fixed";
-		canvas.style.top = "10px";
-		canvas.style.left = "10px";
-		canvas.style.zIndex = "1000";
-		canvas.style.width = "300px";
-		canvas.style.height = "150px";
-		canvas.style.border = "1px solid red";
-		document.body.appendChild(canvas);
-		*/
+	// Create text texture
+	updateTextTexture();
 
-		return new THREE.CanvasTexture(canvas);
-	}
+	// Set initial mouse position
+	mousePos = {x: 0.5, y: 0.5};
+	prevMousePos = {x: 0.5, y: 0.5};
+	targetMousePos = {x: 0.5, y: 0.5};
+}
 
-	// Initialize the 3D scene
-	function initializeScene(texture) {
-		scene = new THREE.Scene();
+function draw() {
+	// Set background
+	background(12, 10);
 
-		const aspectRatio = textContainer.offsetWidth / textContainer.offsetHeight;
-		camera = new THREE.OrthographicCamera(-1, 1, 1 / aspectRatio, -1 / aspectRatio, 0.1, 1000);
-		camera.position.z = 1;
+	// Update mouse position with easing
+	mousePos.x += (targetMousePos.x - mousePos.x) * easeFactor;
+	mousePos.y += (targetMousePos.y - mousePos.y) * easeFactor;
 
-		// Load both shaders from external files
-		Promise.all([fetch("vertex.glsl").then((response) => response.text()), fetch("fragment.glsl").then((response) => response.text())])
-			.then(([vertexShaderCode, fragmentShaderCode]) => {
-				// Store the vertex shader code
-				vertexShader = vertexShaderCode;
+	// Apply the shader
+	shader(myShader);
 
-				// Create shader uniforms
-				let shaderUniforms = {
-					u_mouse: {type: "v2", value: new THREE.Vector2()},
-					u_prevMouse: {type: "v2", value: new THREE.Vector2()},
-					u_texture: {type: "t", value: texture},
-				};
+	// Set shader uniforms
+	myShader.setUniform("u_texture", textGraphics);
+	myShader.setUniform("u_mouse", [mousePos.x, mousePos.y]);
+	myShader.setUniform("u_prevMouse", [prevMousePos.x, prevMousePos.y]);
 
-				planeMesh = new THREE.Mesh(
-					new THREE.PlaneGeometry(2, 2),
-					new THREE.ShaderMaterial({
-						uniforms: shaderUniforms,
-						vertexShader: vertexShaderCode,
-						fragmentShader: fragmentShaderCode,
-					})
-				);
+	// Draw a rectangle covering the entire canvas
+	// In WEBGL mode, the origin is at the center, so we need to use the full width/height
+	push();
+	translate(0, 0, 0);
+	plane(width, height);
+	pop();
 
-				scene.add(planeMesh);
+	// Store current position for next frame
+	prevMousePos = {...mousePos};
+}
 
-				renderer = new THREE.WebGLRenderer({
-					antialias: true,
-					alpha: true,
-					powerPreference: "high-performance",
-				});
-				renderer.setClearColor(0xffffff, 1);
-				renderer.setSize(textContainer.offsetWidth, textContainer.offsetHeight);
-				renderer.setPixelRatio(window.devicePixelRatio);
+function updateTextTexture() {
+	// Create an offscreen graphics buffer for the text
+	textGraphics = createGraphics(width, height, P2D);
+	textGraphics.pixelDensity(pixelDensity());
+	textGraphics.clear();
+	textGraphics.background(120, 11);
 
-				// Enable texture filtering
-				planeMesh.material.map = texture;
-				planeMesh.material.magFilter = THREE.LinearFilter;
-				planeMesh.material.minFilter = THREE.LinearMipMapLinearFilter;
-				planeMesh.material.needsUpdate = true;
+	// Set text style
+	textGraphics.textFont(fontRegular);
 
-				textContainer.appendChild(renderer.domElement);
+	// Start with a large font size
+	let fontSize = width;
+	textGraphics.textSize(fontSize);
 
-				// Start animation after everything is set up
-				animateScene();
-			})
-			.catch((error) => {
-				console.error("Error loading shaders:", error);
-			});
-	}
+	// Measure text width and adjust size to fit canvas width
+	let textWidth = textGraphics.textWidth(expressionText);
+	let scaleFactor = (width / textWidth) * 1; // Full canvas width
+	fontSize *= scaleFactor;
 
-	function reloadTexture() {
-		const newTexture = createTextTexture(expressionText, "Roobert", null, "#000", "100");
-		if (planeMesh && planeMesh.material && planeMesh.material.uniforms) {
-			planeMesh.material.uniforms.u_texture.value = newTexture;
-		}
-	}
+	// Apply the calculated font size
+	textGraphics.textSize(fontSize);
 
-	// Initialize with text texture
-	initializeScene(createTextTexture(expressionText, "Roobert", null, "#000", "100"));
+	// Center the text
+	textGraphics.textAlign(CENTER, CENTER);
 
-	// Animation loop
-	function animateScene() {
-		requestAnimationFrame(animateScene);
+	// Draw the text
+	textGraphics.fill(0); // Black text
+	textGraphics.text(expressionText, width / 2, height / 2.6);
+}
 
-		mousePosition.x += (targetMousePosition.x - mousePosition.x) * easeFactor;
-		mousePosition.y += (targetMousePosition.y - mousePosition.y) * easeFactor;
+function mouseMoved() {
+	easeFactor = 0.1;
 
-		if (planeMesh && planeMesh.material && planeMesh.material.uniforms) {
-			planeMesh.material.uniforms.u_mouse.value.set(mousePosition.x, 1.0 - mousePosition.y);
-			planeMesh.material.uniforms.u_prevMouse.value.set(prevPosition.x, 1.0 - prevPosition.y);
-		}
+	// Convert mouse coordinates to normalized values (0 to 1)
+	prevMousePos = {...targetMousePos};
 
-		if (renderer && scene && camera) {
-			renderer.render(scene, camera);
-		}
-	}
+	targetMousePos.x = mouseX / width;
+	targetMousePos.y = mouseY / height;
 
-	// Event handlers for mouse movement
-	textContainer.addEventListener("mousemove", handleMouseMove);
+	// Constrain values between 0 and 1
+	targetMousePos.x = constrain(targetMousePos.x, 0, 1);
+	targetMousePos.y = constrain(targetMousePos.y, 0, 1);
 
-	function handleMouseMove(event) {
-		easeFactor = 0.1;
-		let rect = textContainer.getBoundingClientRect();
-		prevPosition = {...targetMousePosition};
+	return false; // Prevent default
+}
 
-		targetMousePosition.x = (event.clientX - rect.left) / rect.width;
-		targetMousePosition.y = (event.clientY - rect.top) / rect.height;
-	}
-
-	// Handle window resize
-	window.addEventListener("resize", onWindowResize, false);
-
-	function onWindowResize() {
-		const aspectRatio = textContainer.offsetWidth / textContainer.offsetHeight;
-		camera.left = -1;
-		camera.right = 1;
-		camera.top = 1 / aspectRatio;
-		camera.bottom = -1 / aspectRatio;
-		camera.updateProjectionMatrix();
-
-		renderer.setSize(textContainer.offsetWidth, textContainer.offsetHeight);
-
-		reloadTexture();
-	}
+function windowResized() {
+	const textContainer = document.querySelector("[data-expression-container]");
+	resizeCanvas(textContainer.offsetWidth, textContainer.offsetHeight);
+	updateTextTexture();
 }

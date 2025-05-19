@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Three.js Pixelation Effect</title>
+		<title>Text Distortion Effect with p5.js</title>
 		<style>
 			@font-face {
 				font-family: "Roobert";
@@ -18,10 +18,7 @@
 				align-items: center;
 				flex-direction: column;
 				height: 100vh;
-				margin: 0;
-				background-color: #ffffff;
-				overflow: hidden;
-				color: #1a1a1a;
+				width: 100%;
 			}
 			[data-expression-container] {
 				width: fit-content;
@@ -34,8 +31,9 @@
 			}
 			[data-expression-text] {
 				font-size: 4rem;
-				line-height: 1em;
+				line-height: 1.1em;
 				margin: 0;
+				opacity: 0.1;
 				font-weight: 100;
 				font-family: "Roobert", sans-serif;
 				color: #1a1a1a;
@@ -49,9 +47,17 @@
 		</style>
 	</head>
 	<body>
-		<div data-expression-container>
-			<h1 data-expression-text>Hello</h1>
+		<div class="container">
+			<div class="expression-container" data-expression-container>
+				<div class="expression-text" data-expression-text>INTERACTIVE TEXT</div>
+			</div>
 		</div>
-		<script type="module" src="main.js"></script>
+
+		<!-- p5.js libraries -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.sound.min.js"></script>
+
+		<!-- Our script -->
+		<script src="main.js"></script>
 	</body>
 </html>
