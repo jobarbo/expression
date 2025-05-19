@@ -13,6 +13,15 @@ let prevPosition = {x: 0.5, y: 0.5};
 
 let text_color = textElement.getAttribute("data-text-color");
 
+let textContainerWidth = textContainer.clientWidth;
+let textContainerHeight = textContainer.clientHeight;
+console.log(textContainerWidth, textContainerHeight);
+let x_ratio_raw = 1;
+let y_ratio_raw = textContainerWidth / textContainerHeight;
+console.log(x_ratio_raw, y_ratio_raw);
+let pixelRatioX = x_ratio_raw * window.devicePixelRatio;
+let pixelRatioY = y_ratio_raw * window.devicePixelRatio;
+
 // Vertex shader will be loaded from external file
 let vertexShader;
 
@@ -39,8 +48,8 @@ function initApp() {
 		const canvas = document.createElement("canvas");
 		const ctx = canvas.getContext("2d");
 
-		const canvasWidth = textContainer.clientWidth * 4;
-		const canvasHeight = textContainer.clientHeight * 4;
+		const canvasWidth = textContainer.clientWidth * pixelRatioX;
+		const canvasHeight = textContainer.clientHeight * pixelRatioY;
 		console.log(canvasWidth, canvasHeight);
 		canvas.width = canvasWidth;
 		canvas.height = canvasHeight;
@@ -123,7 +132,7 @@ function initApp() {
 				renderer = new THREE.WebGLRenderer({antialias: true});
 				renderer.setClearColor(0xffffff, 1);
 				renderer.setSize(textContainer.clientWidth, textContainer.clientHeight);
-				renderer.setPixelRatio(4);
+				renderer.setPixelRatio(2);
 
 				textContainer.appendChild(renderer.domElement);
 
@@ -193,14 +202,14 @@ function initApp() {
 	window.addEventListener("resize", onWindowResize, false);
 
 	function onWindowResize() {
-		const aspectRatio = window.innerWidth / window.innerHeight;
+		const aspectRatio = textContainer.clientWidth / textContainer.clientHeight;
 		camera.left = -1;
 		camera.right = 1;
 		camera.top = 1 / aspectRatio;
 		camera.bottom = -1 / aspectRatio;
 		camera.updateProjectionMatrix();
 
-		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.setSize(textContainer.clientWidth, textContainer.clientHeight);
 
 		reloadTexture();
 	}

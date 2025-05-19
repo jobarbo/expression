@@ -32,10 +32,12 @@
 			}
 			[data-expression-text] {
 				margin: 0;
-				font-size: 386px;
+				font-size: 100px;
+				line-height: 1;
 				font-weight: 100;
 				font-family: "Roobert", sans-serif;
-				color: transparent;
+				color: #ba111100;
+				z-index: 2;
 			}
 			canvas {
 				display: block;
@@ -44,12 +46,13 @@
 				left: 0;
 				max-width: 100%;
 				max-height: 100%;
+				z-index: 1;
 			}
 		</style>
 	</head>
 	<body>
 		<div data-expression-container>
-			<h1 data-expression-text data-text-color="#000">Hello</h1>
+			<h1 data-expression-text data-text-size="100" data-text-color="#000">EXPRESSION</h1>
 		</div>
 		<script type="module" src="main.js"></script>
 	</body>
