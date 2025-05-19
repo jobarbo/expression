@@ -36,8 +36,8 @@ function initApp() {
 		const canvas = document.createElement("canvas");
 		const ctx = canvas.getContext("2d");
 
-		const canvasWidth = window.innerWidth * 2;
-		const canvasHeight = window.innerHeight * 2;
+		const canvasWidth = textContainer.offsetHeight;
+		const canvasHeight = textContainer.offsetWidth;
 
 		canvas.width = canvasWidth;
 		canvas.height = canvasHeight;
@@ -54,9 +54,6 @@ function initApp() {
 		console.log("Using font:", ctx.font);
 		ctx.textAlign = "center";
 		ctx.textBaseline = "middle";
-
-		ctx.imageSmoothingEnabled = true;
-		ctx.imageSmoothingQuality = "high";
 
 		const textMetrics = ctx.measureText(text);
 		const textWidth = textMetrics.width;
@@ -90,7 +87,7 @@ function initApp() {
 	function initializeScene(texture) {
 		scene = new THREE.Scene();
 
-		const aspectRatio = window.innerWidth / window.innerHeight;
+		const aspectRatio = textContainer.offsetWidth / textContainer.offsetHeight;
 		camera = new THREE.OrthographicCamera(-1, 1, 1 / aspectRatio, -1 / aspectRatio, 0.1, 1000);
 		camera.position.z = 1;
 
@@ -120,7 +117,7 @@ function initApp() {
 
 				renderer = new THREE.WebGLRenderer({antialias: true});
 				renderer.setClearColor(0xffffff, 1);
-				renderer.setSize(window.innerWidth, window.innerHeight);
+				renderer.setSize(textContainer.offsetWidth, textContainer.offsetHeight);
 				renderer.setPixelRatio(window.devicePixelRatio);
 
 				textContainer.appendChild(renderer.domElement);
@@ -134,14 +131,14 @@ function initApp() {
 	}
 
 	function reloadTexture() {
-		const newTexture = createTextTexture(expressionText, "Roobert", null, "#1bb2ad", "100");
+		const newTexture = createTextTexture(expressionText, "Roobert", null, "#000", "100");
 		if (planeMesh && planeMesh.material && planeMesh.material.uniforms) {
 			planeMesh.material.uniforms.u_texture.value = newTexture;
 		}
 	}
 
 	// Initialize with text texture
-	initializeScene(createTextTexture(expressionText, "Roobert", null, "#1bb2ad", "100"));
+	initializeScene(createTextTexture(expressionText, "Roobert", null, "#000", "100"));
 
 	// Animation loop
 	function animateScene() {
@@ -162,11 +159,9 @@ function initApp() {
 
 	// Event handlers for mouse movement
 	textContainer.addEventListener("mousemove", handleMouseMove);
-	textContainer.addEventListener("mouseenter", handleMouseEnter);
-	textContainer.addEventListener("mouseleave", handleMouseLeave);
 
 	function handleMouseMove(event) {
-		easeFactor = 0.035;
+		easeFactor = 0.1;
 		let rect = textContainer.getBoundingClientRect();
 		prevPosition = {...targetMousePosition};
 
@@ -174,31 +169,18 @@ function initApp() {
 		targetMousePosition.y = (event.clientY - rect.top) / rect.height;
 	}
 
-	function handleMouseEnter(event) {
-		easeFactor = 0.01;
-		let rect = textContainer.getBoundingClientRect();
-
-		mousePosition.x = targetMousePosition.x = (event.clientX - rect.left) / rect.width;
-		mousePosition.y = targetMousePosition.y = (event.clientY - rect.top) / rect.height;
-	}
-
-	function handleMouseLeave() {
-		easeFactor = 0.01;
-		targetMousePosition = {...prevPosition};
-	}
-
 	// Handle window resize
 	window.addEventListener("resize", onWindowResize, false);
 
 	function onWindowResize() {
-		const aspectRatio = window.innerWidth / window.innerHeight;
+		const aspectRatio = textContainer.offsetWidth / textContainer.offsetHeight;
 		camera.left = -1;
 		camera.right = 1;
 		camera.top = 1 / aspectRatio;
 		camera.bottom = -1 / aspectRatio;
 		camera.updateProjectionMatrix();
 
-		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.setSize(textContainer.offsetWidth, textContainer.offsetHeight);
 
 		reloadTexture();
 	}
