@@ -15,10 +15,8 @@ let text_color = textElement.getAttribute("data-text-color");
 
 let textContainerWidth = textContainer.clientWidth;
 let textContainerHeight = textContainer.clientHeight;
-console.log(textContainerWidth, textContainerHeight);
 let x_ratio_raw = 1;
 let y_ratio_raw = textContainerWidth / textContainerHeight;
-console.log(x_ratio_raw, y_ratio_raw);
 let pixelRatioX = x_ratio_raw * window.devicePixelRatio;
 let pixelRatioY = y_ratio_raw * window.devicePixelRatio;
 
