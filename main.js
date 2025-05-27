@@ -18,8 +18,10 @@ if (textSize) {
 		textElement.style.fontSize = textSize;
 	}
 } else {
-	// Default to container width if no size specified
-	textElement.style.fontSize = "100%";
+	// If no data-text-size, use the computed CSS font size
+	const computedStyle = window.getComputedStyle(textElement);
+	const cssFontSize = computedStyle.fontSize;
+	textElement.style.fontSize = cssFontSize;
 }
 
 let easeFactor = 0.02;
@@ -90,22 +92,12 @@ function initApp() {
 				fontSize = parseFloat(textSize); // Assume pixels if no unit specified
 			}
 		}
-		// If no data-text-size or size parameter provided, use container width
-		else if (size === null) {
-			fontSize = containerWidth; // 100% of container width
-		}
-		// Use provided size parameter if it exists
-		else if (typeof size === "string") {
-			if (size.endsWith("vw")) {
-				const vwValue = parseFloat(size);
-				fontSize = (containerWidth * vwValue) / 100;
-			} else if (size.endsWith("px")) {
-				fontSize = parseFloat(size);
-			} else {
-				fontSize = parseFloat(size);
-			}
-		} else {
-			fontSize = size;
+		// If no data-text-size, use the computed CSS font size
+		else {
+			const computedStyle = window.getComputedStyle(textElement);
+			const cssFontSize = computedStyle.fontSize;
+			// Convert the computed size to pixels
+			fontSize = parseFloat(cssFontSize);
 		}
 
 		// Scale the font size by pixel ratio for crisp rendering
@@ -126,7 +118,7 @@ function initApp() {
 		console.log("Text width:", textWidth, "Canvas width:", canvasWidth);
 
 		// Calculate scale factor to ensure text fits with padding
-		const desiredPadding = 0.0; // 20% padding on each side
+		const desiredPadding = 0.0; // No padding
 		const availableWidth = canvasWidth * (1 - desiredPadding * 2);
 		let scaleFactor = Math.min(1, availableWidth / textWidth);
 
