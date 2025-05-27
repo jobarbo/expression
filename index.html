@@ -25,10 +25,17 @@
 			}
 			[data-expression-container] {
 				position: relative;
-				overflow: hidden;
 				display: flex;
 				justify-content: center;
 				align-items: center;
+			}
+			[data-expression-canvas] {
+				width: 150%;
+				height: 150%;
+				position: absolute;
+				top: auto;
+				left: auto;
+				z-index: 1;
 			}
 			[data-expression-text] {
 				margin: 0;
@@ -52,7 +59,8 @@
 	</head>
 	<body>
 		<div data-expression-container>
-			<h1 data-expression-text data-text-color="#000">EXPRESSION</h1>
+			<div data-expression-canvas></div>
+			<h1 data-expression-text data-text-size="50px" data-text-color="#000">EXPRESSION</h1>
 		</div>
 		<script type="module" src="main.js"></script>
 	</body>

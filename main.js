@@ -2,9 +2,26 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js";
 
 // Setup variables
-const textContainer = document.querySelector("[data-expression-container]");
+const mainContainer = document.querySelector("[data-expression-container]");
+const textContainer = document.querySelector("[data-expression-canvas]");
 const textElement = document.querySelector("[data-expression-text]");
 const expressionText = textElement.textContent;
+const textSize = textElement.getAttribute("data-text-size");
+
+// Update the H1 element's font size based on data-text-size
+if (textSize) {
+	// If it's just a number, assume pixels
+	if (!isNaN(textSize)) {
+		textElement.style.fontSize = `${textSize}px`;
+	} else {
+		// If it has units (vw, px, etc), use as is
+		textElement.style.fontSize = textSize;
+	}
+} else {
+	// Default to container width if no size specified
+	textElement.style.fontSize = "100%";
+}
+
 let easeFactor = 0.02;
 let scene, camera, renderer, planeMesh;
 let mousePosition = {x: 0.5, y: 0.5};
@@ -46,9 +63,12 @@ function initApp() {
 		const canvas = document.createElement("canvas");
 		const ctx = canvas.getContext("2d");
 
-		const canvasWidth = textContainer.clientWidth * pixelRatioX;
-		const canvasHeight = textContainer.clientHeight * pixelRatioY;
-		console.log(canvasWidth, canvasHeight);
+		const containerWidth = textContainer.clientWidth;
+		const containerHeight = textContainer.clientHeight;
+
+		// Set canvas size based on container and pixel ratio for crisp rendering
+		const canvasWidth = containerWidth * pixelRatioX;
+		const canvasHeight = containerHeight * pixelRatioY;
 		canvas.width = canvasWidth;
 		canvas.height = canvasHeight;
 
@@ -56,11 +76,44 @@ function initApp() {
 		ctx.fillStyle = "transparent";
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-		// Make text size more prominent
-		const fontSize = size || Math.floor(canvasWidth / 4);
+		// Parse the size parameter to handle both px and vw units
+		let fontSize;
 
-		ctx.fillStyle = color; // Darker text for better contrast
-		ctx.font = `bold ${fontSize}px "Roobert", sans-serif`;
+		// First try to use the data-text-size attribute
+		if (textSize) {
+			if (textSize.endsWith("vw")) {
+				const vwValue = parseFloat(textSize);
+				fontSize = (containerWidth * vwValue) / 100;
+			} else if (textSize.endsWith("px")) {
+				fontSize = parseFloat(textSize);
+			} else {
+				fontSize = parseFloat(textSize); // Assume pixels if no unit specified
+			}
+		}
+		// If no data-text-size or size parameter provided, use container width
+		else if (size === null) {
+			fontSize = containerWidth; // 100% of container width
+		}
+		// Use provided size parameter if it exists
+		else if (typeof size === "string") {
+			if (size.endsWith("vw")) {
+				const vwValue = parseFloat(size);
+				fontSize = (containerWidth * vwValue) / 100;
+			} else if (size.endsWith("px")) {
+				fontSize = parseFloat(size);
+			} else {
+				fontSize = parseFloat(size);
+			}
+		} else {
+			fontSize = size;
+		}
+
+		// Scale the font size by pixel ratio for crisp rendering
+		const scaledFontSize = fontSize * pixelRatioX;
+
+		ctx.fillStyle = color;
+		ctx.font = `bold ${scaledFontSize}px "Roobert", sans-serif`;
+		console.log("Original font size:", fontSize, "Scaled font size:", scaledFontSize);
 		console.log("Using font:", ctx.font);
 		ctx.textAlign = "center";
 		ctx.textBaseline = "middle";
@@ -72,25 +125,16 @@ function initApp() {
 		const textWidth = textMetrics.width;
 		console.log("Text width:", textWidth, "Canvas width:", canvasWidth);
 
-		// Increase scale factor to make text larger
-		const scaleFactor = (canvasWidth * 1) / textWidth;
+		// Calculate scale factor to ensure text fits with padding
+		const desiredPadding = 0.0; // 20% padding on each side
+		const availableWidth = canvasWidth * (1 - desiredPadding * 2);
+		let scaleFactor = Math.min(1, availableWidth / textWidth);
+
 		const aspectCorrection = canvasWidth / canvasHeight;
 
 		ctx.setTransform(scaleFactor, 0, 0, scaleFactor / aspectCorrection, canvasWidth / 2, canvasHeight / 2);
 
 		ctx.fillText(text, 0, 0);
-
-		// For debugging - append canvas to document to see what's being drawn
-		/*
-		canvas.style.position = "fixed";
-		canvas.style.top = "10px";
-		canvas.style.left = "10px";
-		canvas.style.zIndex = "1000";
-		canvas.style.width = "300px";
-		canvas.style.height = "150px";
-		canvas.style.border = "1px solid red";
-		document.body.appendChild(canvas);
-		*/
 
 		return new THREE.CanvasTexture(canvas);
 	}
@@ -170,30 +214,40 @@ function initApp() {
 	}
 
 	// Event handlers for mouse movement
-	textContainer.addEventListener("mousemove", handleMouseMove);
-	textContainer.addEventListener("mouseenter", handleMouseEnter);
-	textContainer.addEventListener("mouseleave", handleMouseLeave);
+	window.addEventListener("mousemove", handleMouseMove);
+	window.addEventListener("mouseenter", handleMouseEnter);
+	window.addEventListener("mouseleave", handleMouseLeave);
 
 	function handleMouseMove(event) {
 		easeFactor = 0.065;
 		let rect = textContainer.getBoundingClientRect();
 		prevPosition = {...targetMousePosition};
 
+		// Calculate position relative to window
 		targetMousePosition.x = (event.clientX - rect.left) / rect.width;
 		targetMousePosition.y = (event.clientY - rect.top) / rect.height;
+
+		// Clamp values between 0 and 1
+		targetMousePosition.x = Math.max(0, Math.min(1, targetMousePosition.x));
+		targetMousePosition.y = Math.max(0, Math.min(1, targetMousePosition.y));
 	}
 
 	function handleMouseEnter(event) {
 		easeFactor = 0.025;
 		let rect = textContainer.getBoundingClientRect();
 
+		// Calculate position relative to window
 		mousePosition.x = targetMousePosition.x = (event.clientX - rect.left) / rect.width;
 		mousePosition.y = targetMousePosition.y = (event.clientY - rect.top) / rect.height;
+
+		// Clamp values between 0 and 1
+		mousePosition.x = Math.max(0, Math.min(1, mousePosition.x));
+		mousePosition.y = Math.max(0, Math.min(1, mousePosition.y));
 	}
 
 	function handleMouseLeave() {
-		easeFactor = 0.025;
-		targetMousePosition = {...prevPosition};
+		// Instead of resetting, keep tracking the mouse position
+		easeFactor = 0.01; // Slower easing when outside the container
 	}
 
 	// Handle window resize
