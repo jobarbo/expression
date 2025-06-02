@@ -91,7 +91,7 @@ function initApp() {
 		const scaledFontSize = fontSize * pixelRatioX;
 
 		ctx.fillStyle = color;
-		ctx.font = `bold ${scaledFontSize}px "Roobert", sans-serif`;
+		ctx.font = `normal ${scaledFontSize}px "Roobert", sans-serif`;
 		console.log("Original font size:", fontSize, "Scaled font size:", scaledFontSize);
 		console.log("Using font:", ctx.font);
 		ctx.textAlign = "center";
