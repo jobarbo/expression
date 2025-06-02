@@ -8,21 +8,8 @@ const textElement = document.querySelector("[data-expression-text]");
 const expressionText = textElement.textContent;
 const textSize = textElement.getAttribute("data-text-size");
 
-// Update the H1 element's font size based on data-text-size
-if (textSize) {
-	// If it's just a number, assume pixels
-	if (!isNaN(textSize)) {
-		textElement.style.fontSize = `${textSize}px`;
-	} else {
-		// If it has units (vw, px, etc), use as is
-		textElement.style.fontSize = textSize;
-	}
-} else {
-	// If no data-text-size, use the computed CSS font size
-	const computedStyle = window.getComputedStyle(textElement);
-	const cssFontSize = computedStyle.fontSize;
-	textElement.style.fontSize = cssFontSize;
-}
+// Remove any inline styles to let CSS handle the font size
+textElement.removeAttribute("style");
 
 let easeFactor = 0.02;
 let scene, camera, renderer, planeMesh;
@@ -254,6 +241,11 @@ function initApp() {
 		camera.updateProjectionMatrix();
 
 		renderer.setSize(textContainer.clientWidth, textContainer.clientHeight);
+
+		// Ensure the font size is maintained with vw units
+		if (textSize) {
+			textElement.style.setProperty("font-size", textSize);
+		}
 
 		reloadTexture();
 	}
