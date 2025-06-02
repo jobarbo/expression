@@ -17,7 +17,7 @@ void main() {
     float strengthY = smoothstep(0.25, 0.0001, pixelDistanceToMouse) * 0.6; // Reduced strength for y-axis
 
     vec2 uvOffset = vec2(
-        strengthX * -mouseDirection.x * 0.7,
+        strengthX * -mouseDirection.x * 1.7,
         strengthY * -mouseDirection.y * 0.15
     );
     vec2 uv = vUv - uvOffset;

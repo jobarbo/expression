@@ -211,7 +211,7 @@ function initApp() {
 	window.addEventListener("mouseleave", handleMouseLeave);
 
 	function handleMouseMove(event) {
-		easeFactor = 0.065;
+		easeFactor = 0.045;
 		let rect = textContainer.getBoundingClientRect();
 		prevPosition = {...targetMousePosition};
 
